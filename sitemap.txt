@@ -1,0 +1,5 @@
+https://your-username.github.io/mcp-json-converter/
+
+# Additional routes for future expansion (currently single-page app)
+# https://your-username.github.io/mcp-json-converter/docs
+# https://your-username.github.io/mcp-json-converter/examples

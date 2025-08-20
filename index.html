@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$ mcp-json-converter - Terminal MCP Config Tool</title>
+    <meta name="description" content="Linux terminal-style MCP server JSON to Claude Code CLI converter">
+    <meta name="keywords" content="MCP, Model Context Protocol, Claude Code, CLI, JSON converter, terminal">
+    <meta name="author" content="MCP JSON Converter">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="MCP JSON Converter - Terminal Style Tool">
+    <meta property="og:description" content="Convert MCP server JSON configurations to Claude Code CLI commands with a Linux terminal interface">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:title" content="MCP JSON Converter - Terminal Style Tool">
+    <meta property="twitter:description" content="Convert MCP server JSON configurations to Claude Code CLI commands with a Linux terminal interface">
+    
+    <!-- GitHub Pages optimization -->
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#0c0c0c">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+        :root {
+            /* Linux Terminal Color Palette */
+            --terminal-bg: #0c0c0c;
+            --terminal-bg-light: #1a1a1a;
+            --terminal-bg-lighter: #262626;
+            --terminal-bg-card: #181818;
+            --terminal-border: #404040;
+            --terminal-border-active: #6c6c6c;
+            
+            /* Terminal Text Colors */
+            --terminal-text: #f0f0f0;
+            --terminal-text-dim: #b3b3b3;
+            --terminal-text-muted: #808080;
+            --terminal-prompt: #4dff4d;
+            --terminal-user: #4d9fff;
+            --terminal-path: #ffff4d;
+            --terminal-error: #ff4d4d;
+            --terminal-success: #4dff4d;
+            --terminal-warning: #ffb84d;
+            --terminal-info: #4db3ff;
+            
+            /* Syntax Highlighting */
+            --json-string: #4dff88;
+            --json-number: #ff884d;
+            --json-boolean: #ff4d88;
+            --json-null: #888888;
+            --json-key: #88ddff;
+            --json-brace: #ffffff;
+            --json-colon: #cccccc;
+            --json-comma: #cccccc;
+            
+            /* Shadows & Effects */
+            --terminal-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+            --terminal-glow: 0 0 10px rgba(77, 255, 77, 0.3);
+            --cursor-blink: blink 1s infinite;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Consolas', 'Monaco', 'Liberation Mono', 'DejaVu Sans Mono', monospace;
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
+            line-height: 1.5;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Terminal Scan Lines Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent 50%, rgba(0, 255, 0, 0.02) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0.3;
+        }
+
+        .terminal-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Terminal Header */
+        .terminal-header {
+            background: var(--terminal-bg-card);
+            border: 2px solid var(--terminal-border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--terminal-shadow);
+            position: relative;
+        }
+
+        .terminal-titlebar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--terminal-border);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 0.5rem;
+            margin-right: 1rem;
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.close { background: var(--terminal-error); }
+        .terminal-dot.minimize { background: var(--terminal-warning); }
+        .terminal-dot.maximize { background: var(--terminal-success); }
+
+        .terminal-title {
+            font-size: 0.875rem;
+            color: var(--terminal-text-dim);
+            font-weight: 500;
+        }
+
+        .terminal-prompt-line {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .prompt-user {
+            color: var(--terminal-user);
+            font-weight: 600;
+        }
+
+        .prompt-at {
+            color: var(--terminal-text-dim);
+            margin: 0 0.25rem;
+        }
+
+        .prompt-host {
+            color: var(--terminal-prompt);
+            font-weight: 600;
+        }
+
+        .prompt-separator {
+            color: var(--terminal-text-dim);
+            margin: 0 0.25rem;
+        }
+
+        .prompt-path {
+            color: var(--terminal-path);
+            font-weight: 500;
+        }
+
+        .prompt-symbol {
+            color: var(--terminal-prompt);
+            margin-left: 0.5rem;
+            font-weight: 700;
+        }
+
+        .app-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--terminal-prompt);
+            margin: 0.5rem 0;
+            text-shadow: var(--terminal-glow);
+        }
+
+        .app-subtitle {
+            color: var(--terminal-text-dim);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Terminal Window */
+        .terminal-window {
+            background: var(--terminal-bg-card);
+            border: 2px solid var(--terminal-border);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--terminal-shadow);
+            flex: 1;
+        }
+
+        .window-header {
+            background: var(--terminal-bg-light);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--terminal-border);
+            font-size: 0.875rem;
+            color: var(--terminal-text-dim);
+        }
+
+        .window-content {
+            padding: 1.5rem;
+        }
+
+        /* Input Section */
+        .input-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--terminal-info);
+            font-size: 0.95rem;
+        }
+
+        .input-label::before {
+            content: '# ';
+            color: var(--terminal-prompt);
+        }
+
+        .json-input-container {
+            position: relative;
+            border: 2px solid var(--terminal-border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .json-input-header {
+            background: var(--terminal-bg-light);
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            color: var(--terminal-text-muted);
+            border-bottom: 1px solid var(--terminal-border);
+        }
+
+        .json-textarea {
+            width: 100%;
+            min-height: 280px;
+            padding: 1rem;
+            background: var(--terminal-bg);
+            color: var(--terminal-text);
+            border: none;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            resize: vertical;
+            outline: none;
+        }
+
+        .json-textarea:focus {
+            background: var(--terminal-bg-light);
+            box-shadow: inset var(--terminal-glow);
+        }
+
+        .json-textarea::placeholder {
+            color: var(--terminal-text-muted);
+            opacity: 0.7;
+        }
+
+        /* Terminal Button */
+        .terminal-button {
+            background: var(--terminal-bg-light);
+            border: 2px solid var(--terminal-border);
+            border-radius: 4px;
+            padding: 0.875rem 1.5rem;
+            color: var(--terminal-text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal-button::before {
+            content: '$ ';
+            color: var(--terminal-prompt);
+            font-weight: 700;
+        }
+
+        .terminal-button:hover:not(:disabled) {
+            border-color: var(--terminal-border-active);
+            background: var(--terminal-bg-lighter);
+            box-shadow: var(--terminal-glow);
+            color: var(--terminal-prompt);
+        }
+
+        .terminal-button:active:not(:disabled) {
+            background: var(--terminal-bg);
+        }
+
+        .terminal-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .terminal-button.primary {
+            border-color: var(--terminal-prompt);
+            background: var(--terminal-bg-light);
+            color: var(--terminal-prompt);
+        }
+
+        .terminal-button.primary:hover:not(:disabled) {
+            background: var(--terminal-prompt);
+            color: var(--terminal-bg);
+            box-shadow: 0 0 20px rgba(77, 255, 77, 0.5);
+        }
+
+        .terminal-button.full-width {
+            width: 100%;
+            text-align: center;
+        }
+
+        .terminal-button.secondary {
+            border-color: var(--terminal-warning);
+            color: var(--terminal-warning);
+        }
+
+        .terminal-button.secondary:hover:not(:disabled) {
+            background: var(--terminal-warning);
+            color: var(--terminal-bg);
+        }
+
+        /* Command Output Section */
+        .output-section {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .output-section.show {
+            display: block;
+            animation: terminalFadeIn 0.5s ease-out;
+        }
+
+        @keyframes terminalFadeIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .command-block {
+            background: var(--terminal-bg-card);
+            border: 2px solid var(--terminal-border);
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .command-block.primary {
+            border-color: var(--terminal-prompt);
+            box-shadow: 0 0 15px rgba(77, 255, 77, 0.2);
+        }
+
+        .command-header {
+            background: var(--terminal-bg-light);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--terminal-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .command-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--terminal-info);
+        }
+
+        .command-label.primary {
+            color: var(--terminal-prompt);
+        }
+
+        .command-label.optional {
+            color: var(--terminal-text-muted);
+        }
+
+        .command-content {
+            position: relative;
+            background: var(--terminal-bg);
+        }
+
+        .command-prompt {
+            padding: 1rem;
+            border-bottom: 1px solid var(--terminal-border);
+            font-size: 0.85rem;
+            color: var(--terminal-text-dim);
+        }
+
+        .command-prompt::before {
+            content: '[';
+            color: var(--terminal-text-muted);
+        }
+
+        .command-prompt::after {
+            content: ']$ ';
+            color: var(--terminal-prompt);
+        }
+
+        .command-text {
+            padding: 1rem;
+            font-family: inherit;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--terminal-text);
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .command-text.primary {
+            color: var(--terminal-prompt);
+            font-weight: 600;
+            padding: 1.5rem;
+            text-shadow: var(--terminal-glow);
+        }
+
+        .copy-button {
+            background: var(--terminal-bg-light);
+            border: 1px solid var(--terminal-border);
+            border-radius: 3px;
+            padding: 0.5rem 0.75rem;
+            color: var(--terminal-text-dim);
+            font-family: inherit;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .copy-button:hover {
+            background: var(--terminal-bg-lighter);
+            color: var(--terminal-text);
+            border-color: var(--terminal-border-active);
+        }
+
+        .copy-button.copied {
+            background: var(--terminal-success);
+            color: var(--terminal-bg);
+            border-color: var(--terminal-success);
+        }
+
+        /* Error Messages */
+        .error-message {
+            display: none;
+            background: var(--terminal-bg-light);
+            border: 1px solid var(--terminal-error);
+            border-left: 4px solid var(--terminal-error);
+            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            margin-top: 0.75rem;
+            color: var(--terminal-error);
+            font-size: 0.875rem;
+        }
+
+        .error-message::before {
+            content: 'ERROR: ';
+            font-weight: 700;
+        }
+
+        /* Server Selection */
+        .server-grid {
+            display: grid;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .server-button {
+            background: var(--terminal-bg-light);
+            border: 2px solid var(--terminal-border);
+            border-radius: 6px;
+            padding: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .server-button:hover {
+            border-color: var(--terminal-border-active);
+            background: var(--terminal-bg-lighter);
+            box-shadow: var(--terminal-glow);
+        }
+
+        .server-name {
+            color: var(--terminal-prompt);
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .server-desc {
+            color: var(--terminal-text-dim);
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        /* Individual Server Commands */
+        .individual-commands {
+            margin-top: 2rem;
+        }
+
+        .server-commands-block {
+            background: var(--terminal-bg-card);
+            border: 2px solid var(--terminal-border);
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .server-commands-header {
+            background: var(--terminal-bg-light);
+            padding: 1rem;
+            border-bottom: 2px solid var(--terminal-border);
+        }
+
+        .server-commands-title {
+            color: var(--terminal-prompt);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .server-commands-desc {
+            color: var(--terminal-text-dim);
+            font-size: 0.875rem;
+        }
+
+        .individual-command {
+            border-bottom: 1px solid var(--terminal-border);
+        }
+
+        .individual-command:last-child {
+            border-bottom: none;
+        }
+
+        .individual-command-header {
+            background: var(--terminal-bg-light);
+            padding: 0.5rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--terminal-text-muted);
+        }
+
+        .individual-command-content {
+            background: var(--terminal-bg);
+            padding: 0;
+        }
+
+        .individual-command-prompt {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--terminal-border);
+            font-size: 0.8rem;
+            color: var(--terminal-text-dim);
+        }
+
+        .individual-command-text {
+            padding: 1rem;
+            color: var(--terminal-text);
+            font-size: 0.875rem;
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .terminal-container {
+                padding: 1rem;
+            }
+            
+            .terminal-header {
+                padding: 1rem;
+            }
+            
+            .app-title {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--terminal-border);
+            border-top: 2px solid var(--terminal-prompt);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Cursor blink animation */
+        .cursor::after {
+            content: '█';
+            color: var(--terminal-prompt);
+            animation: var(--cursor-blink);
+        }
+    </style>
+</head>
+<body>
+    <!-- GitHub Pages SPA Support - Redirect handling -->
+    <script type="text/javascript">
+        (function(l) {
+            if (l.search[1] === '/' ) {
+                var decoded = l.search.slice(1).split('&').map(function(s) { 
+                    return s.replace(/~and~/g, '&')
+                }).join('?');
+                window.history.replaceState(null, null,
+                    l.pathname.slice(0, -1) + decoded + l.hash
+                );
+            }
+        }(window.location))
+    </script>
+    <div class="terminal-container">
+        <header class="terminal-header">
+            <div class="terminal-titlebar">
+                <div class="terminal-dots">
+                    <div class="terminal-dot close"></div>
+                    <div class="terminal-dot minimize"></div>
+                    <div class="terminal-dot maximize"></div>
+                </div>
+                <div class="terminal-title">mcp-json-converter — bash — 120×30</div>
+            </div>
+            
+            <div class="terminal-prompt-line">
+                <span class="prompt-user">user</span>
+                <span class="prompt-at">@</span>
+                <span class="prompt-host">linux-system</span>
+                <span class="prompt-separator">:</span>
+                <span class="prompt-path">~/tools/mcp-converter</span>
+                <span class="prompt-symbol">$</span>
+                <span class="cursor"></span>
+            </div>
+            
+            <h1 class="app-title">MCP JSON → Claude CLI Converter</h1>
+            <p class="app-subtitle"># Transform MCP server configurations into CLI commands</p>
+        </header>
+
+        <main class="terminal-window">
+            <div class="window-header">
+                <span>📄 config-converter.sh — Input JSON Configuration</span>
+            </div>
+            <div class="window-content">
+                <section class="input-section">
+                    <label for="json-input" class="input-label">Paste your MCP server JSON configuration</label>
+                    <div class="json-input-container">
+                        <div class="json-input-header">
+                            <span>config.json — JSON Document</span>
+                        </div>
+                        <textarea 
+                            id="json-input" 
+                            class="json-textarea"
+                            placeholder='// Example configuration:
+"brave-search": {
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+  "env": {
+    "BRAVE_API_KEY": "your-api-key-here"
+  }
+}
+
+// Or paste complete mcpServers object:
+{
+  "mcpServers": {
+    "server-name": { ... }
+  }
+}'
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+                    <div class="error-message" id="error-msg" role="alert"></div>
+                </section>
+
+                <button class="terminal-button primary full-width" onclick="convertToCommand()" id="convert-btn">
+                    convert-to-cli
+                </button>
+
+                <div class="output-section" id="output-section" aria-live="polite">
+                    <div class="command-block primary">
+                        <div class="command-header">
+                            <div class="command-label primary">PRIMARY COMMAND</div>
+                            <button class="copy-button" onclick="copyCommand('add-command', this)">copy</button>
+                        </div>
+                        <div class="command-content">
+                            <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                            <pre class="command-text primary" id="add-command"></pre>
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <div class="command-label optional">LIST SERVERS</div>
+                            <button class="copy-button" onclick="copyCommand('list', this)">copy</button>
+                        </div>
+                        <div class="command-content">
+                            <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                            <pre class="command-text">claude mcp list</pre>
+                        </div>
+                    </div>
+
+                    <div class="command-block">
+                        <div class="command-header">
+                            <div class="command-label optional">REMOVE SERVER</div>
+                            <button class="copy-button" onclick="copyCommand('remove-command', this)">copy</button>
+                        </div>
+                        <div class="command-content">
+                            <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                            <pre class="command-text" id="remove-command"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // JSON Parsing Functions (Single Responsibility)
+        function parseJsonInput(input) {
+            if (!input || !input.trim()) {
+                throw new Error('No JSON configuration provided. Please paste your MCP server config.');
+            }
+            
+            try {
+                return JSON.parse(input.trim());
+            } catch (error) {
+                throw new Error('JSON parsing failed. Check syntax and try again.');
+            }
+        }
+
+        function detectJsonFormat(parsed) {
+            if (parsed.mcpServers) {
+                return 'mcpServers';
+            } else if (parsed.command || parsed.args || parsed.env) {
+                return 'singleConfig';
+            } else {
+                return 'plainObject';
+            }
+        }
+
+        function parseMcpServers(parsed) {
+            const servers = parsed.mcpServers;
+            
+            if (!servers || typeof servers !== 'object') {
+                throw new Error('Invalid mcpServers: must be an object containing server configurations.');
+            }
+            
+            // Validate each server configuration
+            for (const [serverName, config] of Object.entries(servers)) {
+                validateServerName(serverName);
+                validateMcpConfig(config);
+                validateCommandStructure(config.command, config.args);
+                validateEnvironmentVars(config.env);
+            }
+            
+            return servers;
+        }
+
+        function parseSingleConfig(parsed) {
+            validateMcpConfig(parsed);
+            validateCommandStructure(parsed.command, parsed.args);
+            validateEnvironmentVars(parsed.env);
+            
+            const serverName = extractServerName(parsed);
+            validateServerName(serverName);
+            
+            const servers = {};
+            servers[serverName] = parsed;
+            return servers;
+        }
+
+        function parsePlainObject(parsed) {
+            if (!parsed || typeof parsed !== 'object') {
+                throw new Error('Invalid configuration: must be an object containing server configurations.');
+            }
+            
+            // Validate each server configuration in the plain object
+            for (const [serverName, config] of Object.entries(parsed)) {
+                validateServerName(serverName);
+                validateMcpConfig(config);
+                validateCommandStructure(config.command, config.args);
+                validateEnvironmentVars(config.env);
+            }
+            
+            return parsed;
+        }
+
+        // Validation Layer Functions (Interface Segregation)
+        function validateMcpConfig(config) {
+            if (!config || typeof config !== 'object') {
+                throw new Error('Invalid configuration: must be a valid object.');
+            }
+            
+            if (!config.command) {
+                throw new Error('Invalid configuration: missing required "command" field.');
+            }
+            
+            if (typeof config.command !== 'string') {
+                throw new Error('Invalid configuration: "command" must be a string.');
+            }
+            
+            return true;
+        }
+
+        function validateServerName(name) {
+            if (!name || typeof name !== 'string') {
+                throw new Error('Invalid server name: must be a non-empty string.');
+            }
+            
+            if (name.trim().length === 0) {
+                throw new Error('Invalid server name: cannot be empty or whitespace.');
+            }
+            
+            return true;
+        }
+
+        function validateEnvironmentVars(env) {
+            if (!env) return true;
+            
+            if (typeof env !== 'object' || Array.isArray(env)) {
+                throw new Error('Invalid environment variables: must be an object.');
+            }
+            
+            for (const [key, value] of Object.entries(env)) {
+                if (typeof key !== 'string' || key.trim().length === 0) {
+                    throw new Error(`Invalid environment variable key: "${key}" must be a non-empty string.`);
+                }
+                
+                if (value === undefined || value === null) {
+                    throw new Error(`Invalid environment variable value for "${key}": cannot be null or undefined.`);
+                }
+            }
+            
+            return true;
+        }
+
+        function validateCommandStructure(command, args) {
+            if (!command || typeof command !== 'string') {
+                throw new Error('Invalid command structure: command must be a non-empty string.');
+            }
+            
+            if (args && !Array.isArray(args)) {
+                throw new Error('Invalid command structure: args must be an array if provided.');
+            }
+            
+            if (args) {
+                for (let i = 0; i < args.length; i++) {
+                    if (typeof args[i] !== 'string') {
+                        throw new Error(`Invalid command argument at index ${i}: must be a string.`);
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        // Command Building Functions (Single Responsibility)
+        function buildBaseCommand(serverName) {
+            validateServerName(serverName);
+            return `claude mcp add ${serverName} -s user`;
+        }
+
+        function addEnvironmentVariables(baseCommand, envVars) {
+            if (!envVars) return baseCommand;
+            
+            validateEnvironmentVars(envVars);
+            let command = baseCommand;
+            
+            for (const [key, value] of Object.entries(envVars)) {
+                const envValue = value.toString().includes('${') ? value : `"${value}"`;
+                command += ` -e ${key}=${envValue}`;
+            }
+            
+            return command;
+        }
+
+        function addCommandSeparator(command) {
+            return command + ' --';
+        }
+
+        function addCommandAndArgs(command, mcpCommand, args) {
+            validateCommandStructure(mcpCommand, args);
+            let fullCommand = `${command} ${mcpCommand}`;
+            
+            if (args && args.length > 0) {
+                fullCommand += ` ${args.join(' ')}`;
+            }
+            
+            return fullCommand;
+        }
+
+        // UI Rendering Functions (Single Responsibility)
+        function renderSingleServerCommands(serverName, command) {
+            return `
+                <div class="command-block primary">
+                    <div class="command-header">
+                        <div class="command-label primary">PRIMARY COMMAND</div>
+                        <button class="copy-button" onclick="copyCommand('add-command', this)">copy</button>
+                    </div>
+                    <div class="command-content">
+                        <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                        <pre class="command-text primary" id="add-command">${command}</pre>
+                    </div>
+                </div>
+
+                <div class="command-block">
+                    <div class="command-header">
+                        <div class="command-label optional">LIST SERVERS</div>
+                        <button class="copy-button" onclick="copyCommand('list', this)">copy</button>
+                    </div>
+                    <div class="command-content">
+                        <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                        <pre class="command-text">claude mcp list</pre>
+                    </div>
+                </div>
+
+                <div class="command-block">
+                    <div class="command-header">
+                        <div class="command-label optional">REMOVE SERVER</div>
+                        <button class="copy-button" onclick="copyCommand('remove-command', this)">copy</button>
+                    </div>
+                    <div class="command-content">
+                        <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                        <pre class="command-text" id="remove-command">claude mcp remove ${serverName} -s user</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMultiServerSelection(servers) {
+            const serverNames = Object.keys(servers);
+            let serverButtons = '';
+            
+            serverNames.forEach(serverName => {
+                const config = servers[serverName];
+                const description = config.command + (config.args ? ` ${config.args[0] || ''}` : '');
+                const truncatedDesc = description.length > 45 ? description.substring(0, 42) + '...' : description;
+                const configData = btoa(JSON.stringify(config));
+                
+                serverButtons += `
+                    <button class="server-button" onclick="selectServer('${serverName}', '${configData}')">
+                        <div class="server-name">${serverName}</div>
+                        <div class="server-desc">${truncatedDesc}</div>
+                    </button>
+                `;
+            });
+            
+            return `
+                <div class="command-block primary">
+                    <div class="command-header">
+                        <div class="command-label primary">MULTIPLE SERVERS DETECTED</div>
+                    </div>
+                    <div class="command-content">
+                        <div style="padding: 1.5rem;">
+                            <p style="color: var(--terminal-text-dim); margin-bottom: 1.5rem;">
+                                Found ${serverNames.length} MCP server configurations. Choose an option:
+                            </p>
+                            <div class="server-grid">
+                                ${serverButtons}
+                            </div>
+                            <div style="display: grid; gap: 1rem; margin-top: 1.5rem;">
+                                <button class="terminal-button secondary full-width" 
+                                        onclick="generateAllServers(${JSON.stringify(servers).replace(/"/g, '&quot;')})">
+                                    generate-all-individual-commands
+                                </button>
+                                <button class="terminal-button full-width" 
+                                        onclick="convertAllServers(${JSON.stringify(servers).replace(/"/g, '&quot;')})">
+                                    generate-batch-commands
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderIndividualCommands(servers) {
+            const serverNames = Object.keys(servers);
+            let individualHTML = '';
+            
+            serverNames.forEach(serverName => {
+                const config = servers[serverName];
+                const addCommand = buildCommand(serverName, config);
+                const removeCommand = `claude mcp remove ${serverName} -s user`;
+                
+                individualHTML += `
+                    <div class="server-commands-block">
+                        <div class="server-commands-header">
+                            <div class="server-commands-title">${serverName}</div>
+                            <div class="server-commands-desc">${config.command}${config.args ? ' ' + config.args[0] : ''}</div>
+                        </div>
+                        
+                        <div class="individual-command">
+                            <div class="individual-command-header">
+                                <span>ADD SERVER</span>
+                                <button class="copy-button" onclick="copyText('${addCommand.replace(/'/g, "\\'")}', this)">copy</button>
+                            </div>
+                            <div class="individual-command-content">
+                                <div class="individual-command-prompt">user@linux-system:~/tools/mcp-converter]$ </div>
+                                <pre class="individual-command-text">${addCommand}</pre>
+                            </div>
+                        </div>
+                        
+                        <div class="individual-command">
+                            <div class="individual-command-header">
+                                <span>REMOVE SERVER</span>
+                                <button class="copy-button" onclick="copyText('${removeCommand}', this)">copy</button>
+                            </div>
+                            <div class="individual-command-content">
+                                <div class="individual-command-prompt">user@linux-system:~/tools/mcp-converter]$ </div>
+                                <pre class="individual-command-text">${removeCommand}</pre>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return `
+                <div class="individual-commands">
+                    <div class="command-block primary">
+                        <div class="command-header">
+                            <div class="command-label primary">INDIVIDUAL SERVER COMMANDS</div>
+                        </div>
+                        <div class="command-content">
+                            <div style="padding: 1rem;">
+                                <p style="color: var(--terminal-text-dim); margin-bottom: 1rem;">
+                                    Generated individual commands for ${serverNames.length} MCP servers. Each server has its own add and remove command.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    ${individualHTML}
+                </div>
+            `;
+        }
+
+        function renderBatchCommands(allCommands, serverNames) {
+            return `
+                <div class="command-block primary">
+                    <div class="command-header">
+                        <div class="command-label primary">ALL SERVERS BATCH</div>
+                        <button class="copy-button" onclick="copyCommand('add-command', this)">copy</button>
+                    </div>
+                    <div class="command-content">
+                        <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                        <pre class="command-text primary" id="add-command">${allCommands}</pre>
+                    </div>
+                </div>
+                
+                <div class="command-block">
+                    <div class="command-header">
+                        <div class="command-label optional">LIST ALL</div>
+                        <button class="copy-button" onclick="copyCommand('list', this)">copy</button>
+                    </div>
+                    <div class="command-content">
+                        <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                        <pre class="command-text">claude mcp list</pre>
+                    </div>
+                </div>
+                
+                <div class="command-block">
+                    <div class="command-header">
+                        <div class="command-label optional">REMOVE ALL</div>
+                        <button class="copy-button" onclick="copyCommand('remove-command', this)">copy</button>
+                    </div>
+                    <div class="command-content">
+                        <div class="command-prompt">user@linux-system:~/tools/mcp-converter</div>
+                        <pre class="command-text" id="remove-command">${serverNames.map(name => `claude mcp remove ${name} -s user`).join('\n')}</pre>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateOutputSection(html) {
+            const outputSection = document.getElementById('output-section');
+            outputSection.innerHTML = html;
+        }
+
+        // Error Handling System (KISS Principle)
+        function clearError() {
+            const errorMsg = document.getElementById('error-msg');
+            if (errorMsg) {
+                errorMsg.style.display = 'none';
+                errorMsg.textContent = '';
+            }
+        }
+
+        function logError(error, context) {
+            console.error(`[MCP Converter Error] ${context}:`, error);
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('error-msg');
+            if (errorMsg) {
+                errorMsg.textContent = message;
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function handleParsingError(error) {
+            logError(error, 'JSON Parsing');
+            showError(error.message || 'JSON parsing failed. Check syntax and try again.');
+        }
+
+        function handleValidationError(error) {
+            logError(error, 'Configuration Validation');
+            showError(error.message || 'Invalid configuration detected. Please check your MCP server settings.');
+        }
+
+        function handleConversionError(error) {
+            logError(error, 'Command Generation');
+            showError(error.message || 'Failed to generate commands. Please check your configuration.');
+        }
+
+        function handleUIError(error, context) {
+            logError(error, `UI Rendering - ${context}`);
+            showError('Interface rendering failed. Please refresh and try again.');
+        }
+
+        // Clipboard Operations (GitHub Pages HTTPS Compatible)
+        function updateCopyButton(button, state) {
+            const originalText = button.textContent;
+            
+            if (state === 'success') {
+                button.textContent = 'copied!';
+                button.classList.add('copied');
+            } else if (state === 'error') {
+                button.textContent = 'failed!';
+                button.classList.add('error');
+            }
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.classList.remove('copied', 'error');
+            }, 2000);
+        }
+
+        function handleClipboardSuccess(button) {
+            updateCopyButton(button, 'success');
+        }
+
+        function handleClipboardError(text, button) {
+            logError(new Error('Clipboard API failed'), 'Clipboard Operations');
+            
+            try {
+                // Fallback for older browsers or non-HTTPS
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                
+                const success = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (success) {
+                    handleClipboardSuccess(button);
+                } else {
+                    updateCopyButton(button, 'error');
+                }
+            } catch (fallbackError) {
+                logError(fallbackError, 'Clipboard Fallback');
+                updateCopyButton(button, 'error');
+            }
+        }
+
+        function copyToClipboard(text, button) {
+            // Check if modern Clipboard API is available (HTTPS required)
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => handleClipboardSuccess(button))
+                    .catch(() => handleClipboardError(text, button));
+            } else {
+                // Fallback for non-HTTPS or older browsers
+                handleClipboardError(text, button);
+            }
+        }
+
+        // Coordination Functions - Orchestrate refactored components following Dependency Inversion
+        function convertJsonToCommands(input) {
+            const parsed = parseJsonInput(input);
+            const format = detectJsonFormat(parsed);
+            
+            let servers = {};
+            switch (format) {
+                case 'mcpServers':
+                    servers = parseMcpServers(parsed);
+                    break;
+                case 'singleConfig':
+                    servers = parseSingleConfig(parsed);
+                    break;
+                case 'plainObject':
+                    servers = parsePlainObject(parsed);
+                    break;
+            }
+            
+            return servers;
+        }
+
+        function coordinateConversion() {
+            const input = document.getElementById('json-input').value.trim();
+            const servers = convertJsonToCommands(input);
+            const serverNames = Object.keys(servers);
+            
+            if (serverNames.length === 0) {
+                throw new Error('No valid MCP server configurations detected in JSON input.');
+            }
+            
+            if (serverNames.length === 1) {
+                return handleSingleServer(serverNames[0], servers[serverNames[0]]);
+            } else {
+                return handleMultipleServers(servers);
+            }
+        }
+
+        function handleSingleServer(serverName, config) {
+            validateMcpConfig(config);
+            const baseCommand = buildBaseCommand(serverName);
+            const commandWithEnv = addEnvironmentVariables(baseCommand, config.env || {});
+            const commandWithSep = addCommandSeparator(commandWithEnv);
+            const finalCommand = addCommandAndArgs(commandWithSep, config.command, config.args || []);
+            
+            renderSingleServerCommands(serverName, finalCommand);
+            return { type: 'single', serverName, command: finalCommand };
+        }
+
+        function handleMultipleServers(servers) {
+            const serverNames = Object.keys(servers);
+            renderMultiServerSelection(servers);
+            return { type: 'multiple', serverNames, servers };
+        }
+
+        // Main conversion entry point - UI coordination
+        function convertToCommand() {
+            const outputSection = document.getElementById('output-section');
+            const convertBtn = document.getElementById('convert-btn');
+            
+            clearError();
+            outputSection.classList.remove('show');
+            convertBtn.classList.add('loading');
+
+            // Add processing delay for terminal feel
+            setTimeout(() => {
+                try {
+                    // Use coordination functions
+                    const result = coordinateConversion();
+                    
+                    // Update UI state
+                    outputSection.classList.add('show');
+                    convertBtn.textContent = 'regenerate-commands';
+                    
+                } catch (error) {
+                    // Route errors to appropriate handlers
+                    if (error.message.includes('JSON') || error.message.includes('parsing')) {
+                        handleParsingError(error);
+                    } else if (error.message.includes('Invalid') || error.message.includes('must be')) {
+                        handleValidationError(error);
+                    } else {
+                        handleConversionError(error);
+                    }
+                } finally {
+                    convertBtn.classList.remove('loading');
+                }
+            }, 750); // Terminal processing delay
+        }
+
+        function extractServerName(config) {
+            if (config.command === 'npx' && config.args && config.args.length > 0) {
+                const packageName = config.args.find(arg => arg.startsWith('@') || (!arg.startsWith('-') && !arg.startsWith('--')));
+                if (packageName) {
+                    return packageName.split('/').pop().replace(/^(server-|mcp-|@.*\/)/, '');
+                }
+            }
+            return 'mcp-server';
+        }
+
+        function buildCommand(serverName, config) {
+            // Use modular command building pipeline
+            let command = buildBaseCommand(serverName);
+            command = addEnvironmentVariables(command, config.env);
+            command = addCommandSeparator(command);
+            command = addCommandAndArgs(command, config.command, config.args);
+            
+            return command;
+        }
+
+        function displayCommands(serverName, config) {
+            const command = buildCommand(serverName, config);
+            const html = renderSingleServerCommands(serverName, command);
+            updateOutputSection(html);
+        }
+
+        function displayServerSelection(servers) {
+            const html = renderMultiServerSelection(servers);
+            updateOutputSection(html);
+        }
+
+        function selectServer(serverName, encodedConfig) {
+            const config = JSON.parse(atob(encodedConfig));
+            displayCommands(serverName, config);
+        }
+
+        function generateAllServers(servers) {
+            const html = renderIndividualCommands(servers);
+            updateOutputSection(html);
+        }
+
+        function convertAllServers(servers) {
+            let allCommands = '';
+            const serverNames = Object.keys(servers);
+            
+            serverNames.forEach((serverName, index) => {
+                const config = servers[serverName];
+                const command = buildCommand(serverName, config);
+                allCommands += command;
+                if (index < serverNames.length - 1) {
+                    allCommands += '\n';
+                }
+            });
+            
+            const html = renderBatchCommands(allCommands, serverNames);
+            updateOutputSection(html);
+        }
+
+        function copyCommand(elementId, button) {
+            let text;
+            if (elementId === 'list') {
+                text = 'claude mcp list';
+            } else {
+                const element = document.getElementById(elementId);
+                text = element.textContent;
+            }
+            
+            copyToClipboard(text, button);
+        }
+
+        function copyText(text, button) {
+            copyToClipboard(text, button);
+        }
+
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add keyboard shortcuts
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key) {
+                        case 'Enter':
+                            e.preventDefault();
+                            convertToCommand();
+                            break;
+                        case 'k':
+                            e.preventDefault();
+                            document.getElementById('json-input').focus();
+                            break;
+                        case 'l':
+                            e.preventDefault();
+                            document.getElementById('json-input').value = '';
+                            break;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
