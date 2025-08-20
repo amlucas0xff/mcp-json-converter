@@ -1297,13 +1297,15 @@
             const commandWithSep = addCommandSeparator(commandWithEnv);
             const finalCommand = addCommandAndArgs(commandWithSep, config.command, config.args || []);
             
-            renderSingleServerCommands(serverName, finalCommand);
+            const html = renderSingleServerCommands(serverName, finalCommand);
+            updateOutputSection(html);
             return { type: 'single', serverName, command: finalCommand };
         }
 
         function handleMultipleServers(servers) {
             const serverNames = Object.keys(servers);
-            renderMultiServerSelection(servers);
+            const html = renderMultiServerSelection(servers);
+            updateOutputSection(html);
             return { type: 'multiple', serverNames, servers };
         }
 
