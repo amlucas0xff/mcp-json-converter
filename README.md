@@ -14,7 +14,7 @@ Convert MCP (Model Context Protocol) server JSON configurations into Claude Code
 ## Usage
 
 ### Online
-1. Visit the live demo
+1. Visit https://amlucas0xff.github.io/mcp-json-converter/
 2. Paste your MCP JSON configuration
 3. Press `Ctrl+Enter` to convert
 4. Copy the generated commands
