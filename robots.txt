@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://your-username.github.io/mcp-json-converter/sitemap.txt
+Sitemap: https://amlucas0xff.github.io/mcp-json-converter/sitemap.txt
 
 # Allow all search engines to index the tool
 # This is a public utility tool for the Claude Code community

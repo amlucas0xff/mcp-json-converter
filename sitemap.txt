@@ -1,5 +1,5 @@
-https://github.com/amlucas0xff/mcp-json-converter
+https://amlucas0xff.github.io/mcp-json-converter/
 
 # Additional routes for future expansion (currently single-page app)
-# https://github.com/amlucas0xff/mcp-json-converter/docs
-# https://github.com/amlucas0xff/mcp-json-converter/examples
+# https://amlucas0xff.github.io/mcp-json-converter/docs
+# https://amlucas0xff.github.io/mcp-json-converter/examples
