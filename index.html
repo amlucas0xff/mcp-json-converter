@@ -634,6 +634,44 @@
             color: var(--terminal-prompt);
             animation: var(--cursor-blink);
         }
+
+        /* Author Credits Footer */
+        .terminal-footer {
+            margin-top: 2rem;
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--terminal-border);
+            text-align: center;
+        }
+
+        .author-credits {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--terminal-text-dim);
+        }
+
+        .author-link {
+            color: var(--terminal-info);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .author-link:hover {
+            color: var(--terminal-prompt);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .terminal-footer {
+                margin-top: 1.5rem;
+                padding: 1rem 0;
+            }
+            
+            .author-credits {
+                font-size: 0.8rem;
+                line-height: 1.4;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1401,5 +1439,14 @@
             });
         });
     </script>
+    
+    <!-- Author Credits -->
+    <footer class="terminal-footer">
+        <div class="author-credits">
+            <span class="terminal-text-dim">Created by </span>
+            <a href="https://amlucas0xff.zip" target="_blank" rel="noopener noreferrer" class="author-link">Alexandre Marcel Lucas</a>
+            <span class="terminal-text-dim"> | Open Source MIT License</span>
+        </div>
+    </footer>
 </body>
 </html>
